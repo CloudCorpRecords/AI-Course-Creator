@@ -1,8 +1,9 @@
 import { Feather } from "@expo/vector-icons";
-import { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useMemo, useState } from "react";
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { useColors } from "@/hooks/useColors";
+import { TOKEN_COLORS, tokenize } from "@/lib/highlight";
 import type { ContentBlock } from "@workspace/course-content/types";
 
 export function ContentRenderer({ blocks }: { blocks: ContentBlock[] }) {
@@ -66,6 +67,44 @@ function Block({ block }: { block: ContentBlock }) {
   }
 }
 
+function HighlightedCode({
+  language,
+  code,
+}: {
+  language: string;
+  code: string;
+}) {
+  const tokens = useMemo(() => tokenize(language, code), [language, code]);
+  const monospace = Platform.select({
+    ios: "Menlo",
+    android: "monospace",
+    default: "ui-monospace, SFMono-Regular, Menlo, monospace",
+  });
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={{ padding: 14 }}
+    >
+      <Text
+        testID="code-tokens"
+        style={{
+          fontFamily: monospace,
+          fontSize: 12.5,
+          lineHeight: 20,
+          color: TOKEN_COLORS.plain,
+        }}
+      >
+        {tokens.map((t, i) => (
+          <Text key={i} style={{ color: TOKEN_COLORS[t.kind] }}>
+            {t.text}
+          </Text>
+        ))}
+      </Text>
+    </ScrollView>
+  );
+}
+
 function CodeBlockView({
   block,
 }: {
@@ -115,17 +154,7 @@ function CodeBlockView({
           {block.language}
         </Text>
       </View>
-      <Text
-        style={{
-          color: "#cbd5e1",
-          fontFamily: "Inter_400Regular",
-          fontSize: 12.5,
-          lineHeight: 20,
-          padding: 14,
-        }}
-      >
-        {block.code}
-      </Text>
+      <HighlightedCode language={block.language} code={block.code} />
     </View>
   );
 }

@@ -1,4 +1,5 @@
 import { Feather } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { Alert, Platform, Pressable, ScrollView, Switch, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -9,11 +10,13 @@ import { useGamification } from "@/context/GamificationContext";
 export default function ProfileScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const {
     streak,
     notificationsEnabled,
     setNotificationsEnabled,
     resetProgress,
+    badges,
   } = useGamification();
 
   const isWeb = Platform.OS === "web";
@@ -130,15 +133,44 @@ export default function ProfileScreen() {
       </View>
 
       <View style={{ gap: 10 }}>
-        <Text
+        <View
           style={{
-            color: colors.foreground,
-            fontFamily: "Inter_700Bold",
-            fontSize: 18,
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
           }}
         >
-          Badges
-        </Text>
+          <Text
+            style={{
+              color: colors.foreground,
+              fontFamily: "Inter_700Bold",
+              fontSize: 18,
+            }}
+          >
+            Badges ({badges.length})
+          </Text>
+          <Pressable
+            testID="see-all-achievements"
+            onPress={() => router.push("/achievements")}
+            style={({ pressed }) => ({
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 4,
+              opacity: pressed ? 0.7 : 1,
+            })}
+          >
+            <Text
+              style={{
+                color: colors.primary,
+                fontFamily: "Inter_600SemiBold",
+                fontSize: 13,
+              }}
+            >
+              See all
+            </Text>
+            <Feather name="chevron-right" size={14} color={colors.primary} />
+          </Pressable>
+        </View>
         <BadgeGrid />
       </View>
 

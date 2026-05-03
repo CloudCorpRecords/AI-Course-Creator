@@ -198,8 +198,9 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
       };
       setState((prev) => {
         const alreadyDone = !!prev.completedLessons[lessonId];
+        // XP is awarded on the first completion only — no farming by retaking.
         const lessonXp = alreadyDone ? 0 : XP_PER_LESSON;
-        const quizXp = quiz ? xpForQuiz(quiz) : 0;
+        const quizXp = !alreadyDone && quiz ? xpForQuiz(quiz) : 0;
         const xpDelta = lessonXp + quizXp;
         const xp = prev.xp + xpDelta;
 

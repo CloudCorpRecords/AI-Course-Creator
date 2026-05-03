@@ -4,10 +4,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, Circle, ChevronDown, BookOpen, Menu, X } from "lucide-react";
 import { course, getTotalLessons } from "@/data/course";
 import type { Module } from "@/data/types";
+import { SearchTrigger } from "@/components/SearchPalette";
 
 interface SidebarProps {
   completedLessons: Record<string, boolean>;
   completedCount: number;
+  onOpenSearch: () => void;
 }
 
 function ModuleSection({
@@ -106,7 +108,11 @@ function ModuleSection({
   );
 }
 
-export function Sidebar({ completedLessons, completedCount }: SidebarProps) {
+export function Sidebar({
+  completedLessons,
+  completedCount,
+  onOpenSearch,
+}: SidebarProps) {
   const [, navigate] = useLocation();
   const [location] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -116,6 +122,11 @@ export function Sidebar({ completedLessons, completedCount }: SidebarProps) {
 
   const handleNavigate = (lessonId: string) => {
     navigate(`/lesson/${lessonId}`);
+    setMobileOpen(false);
+  };
+
+  const handleOpenSearch = () => {
+    onOpenSearch();
     setMobileOpen(false);
   };
 
@@ -156,6 +167,10 @@ export function Sidebar({ completedLessons, completedCount }: SidebarProps) {
               transition={{ duration: 0.5, ease: "easeOut" }}
             />
           </div>
+        </div>
+
+        <div className="mt-3">
+          <SearchTrigger onClick={handleOpenSearch} />
         </div>
       </div>
 

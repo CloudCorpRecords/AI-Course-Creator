@@ -2,8 +2,10 @@ import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { useEffect, useState } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { CompletionCelebration } from "@/components/CompletionCelebration";
+import { SearchPalette } from "@/components/SearchPalette";
 import { CourseLanding } from "@/pages/CourseLanding";
 import { LessonPage } from "@/pages/LessonPage";
 import { useProgress } from "@/hooks/useProgress";
@@ -22,11 +24,25 @@ function AppLayout() {
     isCompleted,
   } = useProgress();
 
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.key === "k" || e.key === "K") && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setSearchOpen((o) => !o);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar
         completedLessons={completedLessons}
         completedCount={completedCount}
+        onOpenSearch={() => setSearchOpen(true)}
       />
 
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -58,6 +74,11 @@ function AppLayout() {
       </main>
 
       <CompletionCelebration completedCount={completedCount} />
+      <SearchPalette
+        completedLessons={completedLessons}
+        open={searchOpen}
+        onOpenChange={setSearchOpen}
+      />
     </div>
   );
 }

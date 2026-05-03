@@ -1,0 +1,116 @@
+**Masterclass: Coding with AI – From Vibe Coding Basics to First-Principles Mastery (Inspired by Rene Turcios)**
+
+This masterclass draws from Rene Turcios' approach—the "original vibe coder" and SF hackathon king who has won prizes at hundreds of events without traditional coding skills. He uses plain English prompts in tools like Replit and ChatGPT (now evolved to advanced agents) to build functional apps quickly.
+
+It starts with **beginner foundations** (no prior coding needed) and scales to **advanced, first-principles depth** for lifelong coders. The core: Treat AI as a collaborator that handles syntax/details while you focus on vision, architecture, validation, and iteration. Use **first principles**—break problems to fundamentals (what are we really building? What data flows? What constraints?)—to avoid hallucinations, tech debt, and black-box reliance.
+
+### Module 1: Mindset Shift – Vibe Coding & First Principles (All Levels)
+
+**Beginners**: Forget "learning to code" first. Start with **vibe coding** (coined/popularized around Andrej Karpathy's description, pioneered in practice by Turcios): Describe what you want in natural language. "Build a simple web app where users upload a song and it converts to lo-fi beats." AI handles the rest.
+
+**Veterans**: Your existing knowledge is a superpower. AI amplifies 10x but introduces risks (hallucinations, subtle bugs, poor architecture). Adopt **first-principles thinking**:
+- Deconstruct: What is the core problem? Inputs/outputs? Success metrics? Edge cases?
+- Rebuild: Specify constraints (performance, security, scalability) explicitly.
+- Challenge AI output: "Why this approach? Alternatives? Tradeoffs?" Treat AI like a junior dev—review everything.
+
+**Key Principle (Turcios-style)**: Hustle + iteration beats perfection. Ship fast, validate with users, refine. AI lets solo founders or small teams act like unicorns.
+
+**Exercise**: Pick a tiny idea (e.g., todo list). Prompt AI to build it. Run it. Note what works/fails.
+
+### Module 2: Essential Tools & Setup (Beginner → Intermediate)
+
+**Beginner Stack (Turcios' go-to)**:
+- **Replit**: Browser-based IDE with strong AI Agent. Zero setup. Great for prototypes, full apps, deployment. Ask the Agent to build, test, and iterate.
+- Chat interfaces: Claude (strong reasoning), GPT models, or Gemini.
+
+**Pro Stack (2026 Landscape)**:
+- **Cursor**: VS Code fork, best for large codebases, multi-file edits, Composer/Agent mode. Supports multiple models. Excellent for refactoring.
+- **Claude Code / Claude in Cursor**: Top for complex logic, code quality, large contexts.
+- **GitHub Copilot**: Inline suggestions, great pair programmer.
+- Others: Windsurf, v0 (UI), Aider (terminal), Replit Agent for no-code vibes.
+
+**Setup Tips**:
+- Use `.cursorrules` or `CLAUDE.md` files with project rules (style, architecture, best practices). This is higher-leverage than clever prompts.
+- Version control (Git) from day 1. Commit often.
+- Enable agents that can run code, tests, and iterate.
+
+**First Principles**: Choose tools by fundamentals—context window for codebase awareness, execution capability (running tests), model strength for your domain. Don't chase every new tool; master 1-2.
+
+### Module 3: Prompt Engineering Mastery (Core Skill for All)
+
+Prompting is your new "syntax."
+
+**Beginners**:
+- Be specific + contextual: "Create a React todo app with localStorage persistence, Tailwind styling, add/delete/complete tasks. Make it mobile-friendly."
+- Iterate: "Fix the bug where...," "Add feature...," "Explain this code."
+
+**Advanced / First Principles**:
+- **Role + Task + Constraints + Format + Examples** (Chain-of-Thought).
+- Plan first: "Step 1: Analyze requirements. Step 2: Propose architecture (e.g., MVC or functional). Step 3: List files needed. Step 4: Generate code with tests."
+- Context management: Provide relevant files, architecture docs, or past decisions. For veterans: Use AI to map legacy code first.
+- Anti-hallucination: "Only use standard libraries unless specified. Cite sources/reasoning. Flag uncertainties."
+- Vibe + Structure: Start high-level ("vibe: modern SaaS dashboard"), then drill into specs.
+
+**Pro Technique**: Agentic workflows—give high-level goals, let AI plan/execute/iterate with feedback loops. Review plans before code gen.
+
+**Exercise**: Build the same feature 3 ways (different prompts/models). Compare quality, maintainability, performance.
+
+### Module 4: Full Development Workflow (Iterative Building)
+
+**Beginner Flow (Replit/Turcios)**:
+1. Describe vision.
+2. AI builds MVP.
+3. Test in browser.
+4. Prompt refinements.
+5. Deploy (often one-click).
+
+**Advanced Flow (Cursor/Claude)**:
+1. **Planning**: High-level spec + architecture (use first principles: data model, state management, APIs, auth, scaling).
+2. **Scaffold**: AI generates structure, types, tests.
+3. **Implement Iteratively**: Small changes, one file/feature at a time when possible. Use multi-file agents for bigger refactors.
+4. **Review & Test**: Manual code review + automated tests. Ask AI: "Security audit this," "Performance review," "Refactor for readability."
+5. **Deploy & Monitor**: CI/CD, logging, error tracking.
+6. **Maintenance**: AI excels at refactoring, docs, bug fixes.
+
+**First-Principles Depth for Veterans**:
+- Architecture: AI can suggest patterns (SOLID, clean architecture), but challenge from fundamentals—decoupling, single responsibility, observability.
+- Testing: Mandate comprehensive tests (unit, integration, E2E). AI writes them well if prompted.
+- Debugging: "Rubber duck" with AI—explain the bug, trace execution.
+- Tech Debt: Regularly prompt "Identify debt and propose refactors."
+- Security/Compliance: Explicitly instruct on OWASP, data privacy. Review critically.
+
+**Pitfalls to Avoid**: Over-reliance (losing mental models), copy-paste without understanding, ignoring edge cases, vendor lock-in.
+
+### Module 5: Advanced Topics – Agents, Scaling, & Beyond
+
+- **AI Agents**: Multi-agent systems (e.g., Turcios' Agentcies work). One agent plans, another codes, tests, deploys. Build or use frameworks for autonomous workflows.
+- **Large Codebases**: RAG/context techniques, codebase indexing in Cursor/Claude. Incremental changes.
+- **Custom Models/Fine-tuning**: For domain-specific (e.g., your company's stack)—veterans only.
+- **Evaluation**: Benchmarks (SWE-bench), human review, user metrics.
+- **Team/Enterprise**: Rules files, PR reviews with AI, knowledge bases for consistent prompting.
+- **Future-Proofing**: Learn fundamentals (data structures, networks, databases) so you direct AI effectively. Stay updated on models/tools.
+
+**First Principles Here**: AI is a force multiplier on clear thinking. Garbage in (vague specs) → garbage out. Master decomposition, specification, and validation—these don't automate away easily.
+
+### Module 6: Projects & Practice Path
+
+**Beginners**:
+- Todo app → Blog → Simple SaaS (e.g., Labubu resale tracker).
+- Hackathons (Turcios' training ground).
+
+**Intermediate**: Full-stack app with DB, auth, payments.
+**Advanced**: AI-powered tool, agent system, refactor legacy project, production app with monitoring.
+
+Track progress: Time to MVP, code quality scores, user feedback. Aim for "I shipped X without writing most of the code."
+
+### Final Wisdom & Resources
+
+Rene Turcios shows vision + AI execution > traditional skills for rapid building. Veterans: Your deep knowledge lets you build *better* systems faster—more reliable, scalable, innovative.
+
+**Core Takeaway (First Principles)**: Coding with AI is about **human intelligence directing machine intelligence**. Break problems to atoms, specify clearly, verify rigorously, iterate relentlessly.
+
+Practice daily. Experiment with tools. Build in public. The barrier to creating software has never been lower—leverage it.
+
+Recommended further reading/viewing: SF Standard article on Turcios, Cursor/Claude docs, prompt engineering guides, first-principles thinking resources. Join communities (hackathons, Discord for Cursor/Replit).
+
+Start small today: Open Replit or Cursor, describe an idea, and build. The AI is waiting.

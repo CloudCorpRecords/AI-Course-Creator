@@ -14,3 +14,110 @@ import * as zod from "zod";
 export const HealthCheckResponse = zod.object({
   status: zod.string(),
 });
+
+/**
+ * @summary Top entries plus the caller's rank
+ */
+export const getLeaderboardQueryDeviceIdMin = 8;
+export const getLeaderboardQueryDeviceIdMax = 128;
+
+export const getLeaderboardQueryLimitDefault = 20;
+export const getLeaderboardQueryLimitMax = 100;
+
+export const GetLeaderboardQueryParams = zod.object({
+  deviceId: zod.coerce
+    .string()
+    .min(getLeaderboardQueryDeviceIdMin)
+    .max(getLeaderboardQueryDeviceIdMax)
+    .optional()
+    .describe(
+      "Caller's anonymous device id; when present, includes the caller's own rank.",
+    ),
+  limit: zod.coerce
+    .number()
+    .min(1)
+    .max(getLeaderboardQueryLimitMax)
+    .default(getLeaderboardQueryLimitDefault),
+});
+
+export const GetLeaderboardResponse = zod.object({
+  entries: zod.array(
+    zod.object({
+      deviceId: zod.string(),
+      displayName: zod.string(),
+      xp: zod.number(),
+      level: zod.number(),
+      streak: zod.number(),
+      rank: zod.number(),
+      updatedAt: zod.coerce.date(),
+    }),
+  ),
+  self: zod
+    .union([
+      zod.object({
+        deviceId: zod.string(),
+        displayName: zod.string(),
+        xp: zod.number(),
+        level: zod.number(),
+        streak: zod.number(),
+        rank: zod.number(),
+        updatedAt: zod.coerce.date(),
+      }),
+      zod.null(),
+    ])
+    .optional(),
+  total: zod.number(),
+});
+
+/**
+ * @summary Submit or update the caller's score
+ */
+export const upsertLeaderboardEntryBodyDeviceIdMin = 8;
+export const upsertLeaderboardEntryBodyDeviceIdMax = 128;
+
+export const upsertLeaderboardEntryBodyDisplayNameMin = 2;
+export const upsertLeaderboardEntryBodyDisplayNameMax = 24;
+
+export const upsertLeaderboardEntryBodyDisplayNameRegExp = new RegExp(
+  "^[A-Za-z0-9_\\- ]+$",
+);
+export const upsertLeaderboardEntryBodyXpMin = 0;
+export const upsertLeaderboardEntryBodyXpMax = 10000000;
+
+export const upsertLeaderboardEntryBodyLevelMax = 1000;
+
+export const upsertLeaderboardEntryBodyStreakMin = 0;
+export const upsertLeaderboardEntryBodyStreakMax = 10000;
+
+export const UpsertLeaderboardEntryBody = zod.object({
+  deviceId: zod
+    .string()
+    .min(upsertLeaderboardEntryBodyDeviceIdMin)
+    .max(upsertLeaderboardEntryBodyDeviceIdMax),
+  displayName: zod
+    .string()
+    .min(upsertLeaderboardEntryBodyDisplayNameMin)
+    .max(upsertLeaderboardEntryBodyDisplayNameMax)
+    .regex(upsertLeaderboardEntryBodyDisplayNameRegExp),
+  xp: zod
+    .number()
+    .min(upsertLeaderboardEntryBodyXpMin)
+    .max(upsertLeaderboardEntryBodyXpMax),
+  level: zod.number().min(1).max(upsertLeaderboardEntryBodyLevelMax),
+  streak: zod
+    .number()
+    .min(upsertLeaderboardEntryBodyStreakMin)
+    .max(upsertLeaderboardEntryBodyStreakMax),
+});
+
+export const UpsertLeaderboardEntryResponse = zod.object({
+  entry: zod.object({
+    deviceId: zod.string(),
+    displayName: zod.string(),
+    xp: zod.number(),
+    level: zod.number(),
+    streak: zod.number(),
+    rank: zod.number(),
+    updatedAt: zod.coerce.date(),
+  }),
+});

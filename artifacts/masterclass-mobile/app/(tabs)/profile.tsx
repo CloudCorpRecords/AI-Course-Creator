@@ -3,9 +3,14 @@ import { useRouter } from "expo-router";
 import { Alert, Platform, Pressable, ScrollView, Switch, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { useState } from "react";
+import { TextInput } from "react-native";
+
 import { BadgeGrid, MiniStatRow, XPProgressCard } from "@/components/Stats";
 import { useColors } from "@/hooks/useColors";
 import { useGamification } from "@/context/GamificationContext";
+import { useLeaderboard } from "@/context/LeaderboardContext";
+import { validateDisplayName } from "@/lib/leaderboard";
 
 export default function ProfileScreen() {
   const colors = useColors();
@@ -18,6 +23,31 @@ export default function ProfileScreen() {
     resetProgress,
     badges,
   } = useGamification();
+  const {
+    displayName,
+    setDisplayName,
+    syncStatus,
+  } = useLeaderboard();
+  const [nameDraft, setNameDraft] = useState(displayName ?? "");
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [nameBusy, setNameBusy] = useState(false);
+  const [nameSaved, setNameSaved] = useState(false);
+
+  function saveName() {
+    const err = validateDisplayName(nameDraft);
+    if (err) {
+      setNameError(err);
+      return;
+    }
+    setNameError(null);
+    setNameBusy(true);
+    setDisplayName(nameDraft.trim())
+      .then(() => {
+        setNameSaved(true);
+        setTimeout(() => setNameSaved(false), 1500);
+      })
+      .finally(() => setNameBusy(false));
+  }
 
   const isWeb = Platform.OS === "web";
 
@@ -172,6 +202,107 @@ export default function ProfileScreen() {
           </Pressable>
         </View>
         <BadgeGrid />
+      </View>
+
+      <View
+        testID="display-name-card"
+        style={{
+          backgroundColor: colors.card,
+          borderRadius: colors.radius,
+          borderWidth: 1,
+          borderColor: colors.border,
+          padding: 16,
+          gap: 10,
+        }}
+      >
+        <Text
+          style={{
+            color: colors.foreground,
+            fontFamily: "Inter_700Bold",
+            fontSize: 16,
+          }}
+        >
+          Leaderboard name
+        </Text>
+        <Text
+          style={{
+            color: colors.mutedForeground,
+            fontFamily: "Inter_400Regular",
+            fontSize: 12.5,
+            lineHeight: 18,
+          }}
+        >
+          How you appear to other learners. 2–24 characters.
+        </Text>
+        <TextInput
+          testID="profile-display-name-input"
+          value={nameDraft}
+          onChangeText={(t) => {
+            setNameDraft(t);
+            if (nameError) setNameError(null);
+          }}
+          placeholder="Your name"
+          placeholderTextColor={colors.mutedForeground}
+          autoCapitalize="none"
+          autoCorrect={false}
+          maxLength={24}
+          style={{
+            backgroundColor: colors.background,
+            borderRadius: 10,
+            borderWidth: 1,
+            borderColor: nameError ? colors.destructive : colors.border,
+            paddingHorizontal: 12,
+            paddingVertical: 10,
+            color: colors.foreground,
+            fontFamily: "Inter_500Medium",
+            fontSize: 15,
+          }}
+        />
+        {nameError ? (
+          <Text
+            style={{
+              color: colors.destructive,
+              fontFamily: "Inter_500Medium",
+              fontSize: 12,
+            }}
+          >
+            {nameError}
+          </Text>
+        ) : null}
+        <Pressable
+          testID="profile-display-name-save"
+          disabled={nameBusy || nameDraft.trim() === (displayName ?? "")}
+          onPress={saveName}
+          style={({ pressed }) => ({
+            backgroundColor: colors.primary,
+            borderRadius: 10,
+            paddingVertical: 11,
+            alignItems: "center",
+            opacity:
+              nameBusy || pressed || nameDraft.trim() === (displayName ?? "")
+                ? 0.6
+                : 1,
+          })}
+        >
+          <Text
+            style={{
+              color: colors.primaryForeground,
+              fontFamily: "Inter_700Bold",
+              fontSize: 14,
+            }}
+          >
+            {nameBusy ? "Saving…" : nameSaved ? "Saved!" : "Update name"}
+          </Text>
+        </Pressable>
+        <Text
+          style={{
+            color: colors.mutedForeground,
+            fontFamily: "Inter_400Regular",
+            fontSize: 11,
+          }}
+        >
+          Sync status: {syncStatus}
+        </Text>
       </View>
 
       <View

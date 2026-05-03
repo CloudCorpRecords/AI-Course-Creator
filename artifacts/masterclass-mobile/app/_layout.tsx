@@ -15,8 +15,10 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { CelebrationOverlay } from "@/components/Celebration";
+import { DisplayNamePrompt } from "@/components/DisplayNamePrompt";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { GamificationProvider } from "@/context/GamificationContext";
+import { LeaderboardProvider } from "@/context/LeaderboardContext";
 import { useColors } from "@/hooks/useColors";
 
 SplashScreen.preventAutoHideAsync();
@@ -44,6 +46,7 @@ function RootLayoutNav() {
         />
       </Stack>
       <CelebrationOverlay />
+      <DisplayNamePrompt />
     </>
   );
 }
@@ -71,7 +74,9 @@ export default function RootLayout() {
           <GestureHandlerRootView>
             <KeyboardProvider>
               <GamificationProvider>
-                <RootLayoutNav />
+                <LeaderboardProvider>
+                  <RootLayoutNav />
+                </LeaderboardProvider>
               </GamificationProvider>
             </KeyboardProvider>
           </GestureHandlerRootView>

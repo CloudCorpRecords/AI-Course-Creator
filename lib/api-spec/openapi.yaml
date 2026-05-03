@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: leaderboard
+    description: Global leaderboard for masterclass learners
 paths:
   /healthz:
     get:
@@ -24,6 +26,58 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /leaderboard:
+    get:
+      operationId: getLeaderboard
+      tags: [leaderboard]
+      summary: Top entries plus the caller's rank
+      parameters:
+        - in: query
+          name: deviceId
+          required: false
+          schema:
+            type: string
+            minLength: 8
+            maxLength: 128
+          description: Caller's anonymous device id; when present, includes the caller's own rank.
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: Ranked entries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LeaderboardResponse"
+    post:
+      operationId: upsertLeaderboardEntry
+      tags: [leaderboard]
+      summary: Submit or update the caller's score
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LeaderboardSubmission"
+      responses:
+        "200":
+          description: Stored entry with current rank
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LeaderboardUpsertResponse"
+        "400":
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +87,76 @@ components:
           type: string
       required:
         - status
-
+    ApiError:
+      type: object
+      properties:
+        error:
+          type: string
+        detail:
+          type: string
+      required:
+        - error
+    LeaderboardSubmission:
+      type: object
+      properties:
+        deviceId:
+          type: string
+          minLength: 8
+          maxLength: 128
+        displayName:
+          type: string
+          minLength: 2
+          maxLength: 24
+          pattern: "^[A-Za-z0-9_\\- ]+$"
+        xp:
+          type: integer
+          minimum: 0
+          maximum: 10000000
+        level:
+          type: integer
+          minimum: 1
+          maximum: 1000
+        streak:
+          type: integer
+          minimum: 0
+          maximum: 10000
+      required: [deviceId, displayName, xp, level, streak]
+    LeaderboardEntry:
+      type: object
+      properties:
+        deviceId:
+          type: string
+        displayName:
+          type: string
+        xp:
+          type: integer
+        level:
+          type: integer
+        streak:
+          type: integer
+        rank:
+          type: integer
+        updatedAt:
+          type: string
+          format: date-time
+      required: [deviceId, displayName, xp, level, streak, rank, updatedAt]
+    LeaderboardResponse:
+      type: object
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/LeaderboardEntry"
+        self:
+          oneOf:
+            - $ref: "#/components/schemas/LeaderboardEntry"
+            - type: "null"
+        total:
+          type: integer
+      required: [entries, total]
+    LeaderboardUpsertResponse:
+      type: object
+      properties:
+        entry:
+          $ref: "#/components/schemas/LeaderboardEntry"
+      required: [entry]

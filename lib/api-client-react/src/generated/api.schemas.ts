@@ -8,3 +8,71 @@
 export interface HealthStatus {
   status: string;
 }
+
+export interface ApiError {
+  error: string;
+  detail?: string;
+}
+
+export interface LeaderboardSubmission {
+  /**
+   * @minLength 8
+   * @maxLength 128
+   */
+  deviceId: string;
+  /**
+   * @minLength 2
+   * @maxLength 24
+   * @pattern ^[A-Za-z0-9_\- ]+$
+   */
+  displayName: string;
+  /**
+   * @minimum 0
+   * @maximum 10000000
+   */
+  xp: number;
+  /**
+   * @minimum 1
+   * @maximum 1000
+   */
+  level: number;
+  /**
+   * @minimum 0
+   * @maximum 10000
+   */
+  streak: number;
+}
+
+export interface LeaderboardEntry {
+  deviceId: string;
+  displayName: string;
+  xp: number;
+  level: number;
+  streak: number;
+  rank: number;
+  updatedAt: string;
+}
+
+export interface LeaderboardResponse {
+  entries: LeaderboardEntry[];
+  self?: LeaderboardEntry | null;
+  total: number;
+}
+
+export interface LeaderboardUpsertResponse {
+  entry: LeaderboardEntry;
+}
+
+export type GetLeaderboardParams = {
+  /**
+   * Caller's anonymous device id; when present, includes the caller's own rank.
+   * @minLength 8
+   * @maxLength 128
+   */
+  deviceId?: string;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+};

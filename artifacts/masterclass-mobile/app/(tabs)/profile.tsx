@@ -3,7 +3,7 @@ import { useRouter } from "expo-router";
 import { Alert, Platform, Pressable, ScrollView, Switch, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { TextInput } from "react-native";
 
 import { BadgeGrid, MiniStatRow, XPProgressCard } from "@/components/Stats";
@@ -32,6 +32,13 @@ export default function ProfileScreen() {
   const [nameError, setNameError] = useState<string | null>(null);
   const [nameBusy, setNameBusy] = useState(false);
   const [nameSaved, setNameSaved] = useState(false);
+
+  // The display name is loaded asynchronously from AsyncStorage. Keep the
+  // input in sync once it arrives (or after another surface updates it),
+  // unless the user has already started editing.
+  useEffect(() => {
+    setNameDraft((prev) => (prev === "" ? displayName ?? "" : prev));
+  }, [displayName]);
 
   function saveName() {
     const err = validateDisplayName(nameDraft);

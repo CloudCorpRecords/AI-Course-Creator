@@ -70,10 +70,15 @@ See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and pa
 
 ## End-to-end tests
 
-Run interactively via the testing skill (`runTest`). Coverage:
-- **Web** (`artifacts/masterclass`): home → open lesson → mark complete →
-  command palette search → navigate to result.
-- **Mobile** (`artifacts/masterclass-mobile`, Expo web): browse modules →
-  complete lesson quiz → display-name onboarding → Profile shows updated
-  XP/level/streak/badges → Leaderboard tab shows self row highlighted and
-  synced.
+Playwright specs live in `tests/e2e/` with `playwright.config.ts` at the
+repo root. They target `E2E_BASE_URL` (defaults to
+`https://$REPLIT_DEV_DOMAIN`) and assume the dev workflows are running.
+
+- `pnpm test:e2e` — run web + mobile specs (one-time:
+  `pnpm exec playwright install chromium`).
+- `pnpm test:e2e:web` — `tests/e2e/web.spec.ts`: home → open lesson →
+  mark complete → command palette search → navigate to result.
+- `pnpm test:e2e:mobile` — `tests/e2e/mobile.spec.ts`: browse modules →
+  complete a quiz → display-name onboarding → Profile shows updated
+  XP/level/streak/badges → Leaderboard tab shows self row highlighted
+  and synced.

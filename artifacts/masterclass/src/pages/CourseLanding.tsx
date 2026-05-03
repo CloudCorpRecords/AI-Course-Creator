@@ -14,6 +14,7 @@ import { course, getTotalLessons, getTotalMinutes } from "@/data/course";
 
 interface CourseLandingProps {
   completedCount: number;
+  completedLessons: Record<string, boolean>;
   lastVisitedLesson: string | null;
 }
 
@@ -21,6 +22,7 @@ const MODULE_ICONS = [Brain, Code2, Zap, BookOpen, Trophy, CheckCircle2];
 
 export function CourseLanding({
   completedCount,
+  completedLessons,
   lastVisitedLesson,
 }: CourseLandingProps) {
   const [, navigate] = useLocation();
@@ -32,11 +34,7 @@ export function CourseLanding({
   const firstLesson = course.modules[0].lessons[0];
 
   const handleContinue = () => {
-    if (lastVisitedLesson) {
-      navigate(`/lesson/${lastVisitedLesson}`);
-    } else {
-      navigate(`/lesson/${firstLesson.id}`);
-    }
+    navigate(`/lesson/${lastVisitedLesson ?? firstLesson.id}`);
   };
 
   return (
@@ -134,11 +132,11 @@ export function CourseLanding({
           {course.modules.map((module, i) => {
             const Icon = MODULE_ICONS[i] ?? BookOpen;
             const completedInModule = module.lessons.filter(
-              (l) =>
-                typeof window !== "undefined"
-                  ? false
-                  : false
+              (l) => !!completedLessons[l.id]
             ).length;
+            const modulePct = Math.round(
+              (completedInModule / module.lessons.length) * 100
+            );
 
             return (
               <motion.div
@@ -161,6 +159,9 @@ export function CourseLanding({
                           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                             Module {module.number}
                           </span>
+                          {completedInModule === module.lessons.length && (
+                            <CheckCircle2 size={12} className="text-emerald-400" />
+                          )}
                         </div>
                         <h3 className="text-base font-semibold text-foreground group-hover:text-primary transition-colors mb-1">
                           {module.title}
@@ -182,6 +183,12 @@ export function CourseLanding({
                             )}
                             h
                           </span>
+                          {completedInModule > 0 && (
+                            <span className="text-xs text-primary font-medium">
+                              {completedInModule}/{module.lessons.length} done
+                              {modulePct === 100 ? " ✓" : ""}
+                            </span>
+                          )}
                         </div>
                       </div>
                       <ArrowRight

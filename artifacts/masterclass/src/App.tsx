@@ -34,6 +34,7 @@ function AppLayout() {
             {() => (
               <CourseLanding
                 completedCount={completedCount}
+                completedLessons={completedLessons}
                 lastVisitedLesson={lastVisitedLesson}
               />
             )}

@@ -1,3 +1,6 @@
+import { useState } from "react";
+import SyntaxHighlighter from "react-syntax-highlighter";
+import { atomOneDark } from "react-syntax-highlighter/dist/esm/styles/hljs";
 import type { ContentBlock } from "@/data/types";
 import {
   Lightbulb,
@@ -6,6 +9,7 @@ import {
   Dumbbell,
   CheckSquare,
   Quote as QuoteIcon,
+  ChevronDown,
 } from "lucide-react";
 
 function CodeBlock({
@@ -17,24 +21,49 @@ function CodeBlock({
   language: string;
   caption?: string;
 }) {
+  const langMap: Record<string, string> = {
+    js: "javascript",
+    ts: "typescript",
+    tsx: "typescript",
+    jsx: "javascript",
+    sh: "bash",
+    shell: "bash",
+    yml: "yaml",
+    py: "python",
+  };
+  const hlLang = langMap[language] ?? language;
+
   return (
-    <div className="code-block my-6">
+    <div className="code-block my-6 overflow-hidden rounded-[8px]">
       {(caption || language) && (
-        <div className="flex items-center justify-between px-4 py-2 border-b border-border/60 bg-white/3">
-          {caption && (
+        <div className="flex items-center justify-between px-4 py-2 border-b border-border/60 bg-black/20">
+          {caption ? (
             <span className="text-xs text-muted-foreground font-medium truncate">
               {caption}
             </span>
+          ) : (
+            <span />
           )}
-          {!caption && <span />}
           <span className="text-xs text-muted-foreground/60 font-mono uppercase tracking-wider shrink-0 ml-2">
             {language}
           </span>
         </div>
       )}
-      <pre>
-        <code className={`language-${language}`}>{code}</code>
-      </pre>
+      <SyntaxHighlighter
+        language={hlLang}
+        style={atomOneDark}
+        customStyle={{
+          margin: 0,
+          padding: "1.25rem 1.5rem",
+          background: "hsl(228 14% 6%)",
+          fontSize: "0.84rem",
+          lineHeight: "1.7",
+          overflowX: "auto",
+        }}
+        wrapLongLines={false}
+      >
+        {code}
+      </SyntaxHighlighter>
     </div>
   );
 }
@@ -51,21 +80,18 @@ function Callout({
   const config = {
     tip: {
       icon: <Lightbulb size={15} />,
-      label: "Tip",
       className: "callout callout-tip",
       titleColor: "text-emerald-400",
       iconBg: "bg-emerald-400/15",
     },
     warning: {
       icon: <AlertTriangle size={15} />,
-      label: "Watch Out",
       className: "callout callout-warning",
       titleColor: "text-amber-400",
       iconBg: "bg-amber-400/15",
     },
     insight: {
       icon: <Sparkles size={15} />,
-      label: "Insight",
       className: "callout callout-insight",
       titleColor: "text-primary",
       iconBg: "bg-primary/15",
@@ -96,6 +122,8 @@ function ExerciseBlock({
   description: string;
   hints: string[];
 }) {
+  const [hintsOpen, setHintsOpen] = useState(false);
+
   return (
     <div className="exercise-block">
       <div className="flex items-center gap-2 mb-3">
@@ -112,17 +140,27 @@ function ExerciseBlock({
       </p>
       {hints.length > 0 && (
         <div>
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-            Hints
-          </p>
-          <ul className="space-y-1.5">
-            {hints.map((hint, i) => (
-              <li key={i} className="flex gap-2 text-sm text-foreground/75">
-                <span className="text-primary shrink-0 mt-0.5">→</span>
-                <span>{hint}</span>
-              </li>
-            ))}
-          </ul>
+          <button
+            onClick={() => setHintsOpen((o) => !o)}
+            className="flex items-center gap-2 text-xs font-semibold text-primary/80 hover:text-primary transition-colors mb-2 group"
+          >
+            <ChevronDown
+              size={13}
+              className={`transition-transform duration-200 ${hintsOpen ? "rotate-180" : ""}`}
+            />
+            {hintsOpen ? "Hide hints" : `Show ${hints.length} hint${hints.length > 1 ? "s" : ""}`}
+          </button>
+
+          {hintsOpen && (
+            <ul className="space-y-1.5 mt-2 pl-1">
+              {hints.map((hint, i) => (
+                <li key={i} className="flex gap-2 text-sm text-foreground/75">
+                  <span className="text-primary shrink-0 mt-0.5">→</span>
+                  <span>{hint}</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
     </div>
@@ -256,10 +294,7 @@ export function ContentRenderer({ blocks }: { blocks: ContentBlock[] }) {
 
           case "list":
             return block.ordered ? (
-              <ol
-                key={i}
-                className="list-none space-y-2.5 my-5 pl-0"
-              >
+              <ol key={i} className="list-none space-y-2.5 my-5 pl-0">
                 {block.items.map((item, j) => (
                   <li key={j} className="flex gap-3 text-[15px] text-foreground/80">
                     <span className="shrink-0 w-6 h-6 rounded-full bg-primary/15 text-primary text-xs font-bold flex items-center justify-center mt-0.5">

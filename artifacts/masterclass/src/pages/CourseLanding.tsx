@@ -184,9 +184,9 @@ export function CourseLanding({
                             h
                           </span>
                           {completedInModule > 0 && (
-                            <span className="text-xs text-primary font-medium">
+                            <span className="text-xs text-primary font-medium flex items-center gap-1">
                               {completedInModule}/{module.lessons.length} done
-                              {modulePct === 100 ? " ✓" : ""}
+                              {modulePct === 100 && <CheckCircle2 size={11} className="text-emerald-400" />}
                             </span>
                           )}
                         </div>

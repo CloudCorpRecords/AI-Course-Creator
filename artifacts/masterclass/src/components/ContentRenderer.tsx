@@ -181,7 +181,7 @@ function TakeawaysBlock({ items }: { items: string[] }) {
       <ul className="space-y-2">
         {items.map((item, i) => (
           <li key={i} className="flex gap-2.5 text-sm text-foreground/85">
-            <span className="text-emerald-400 shrink-0 font-bold mt-0.5">✓</span>
+            <CheckSquare size={14} className="text-emerald-400 shrink-0 mt-0.5" />
             <span>{item}</span>
           </li>
         ))}

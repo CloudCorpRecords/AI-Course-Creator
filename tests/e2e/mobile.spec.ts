@@ -87,6 +87,19 @@ test.describe("masterclass mobile (expo web)", () => {
       }
     }
 
+    // Achievements: profile has a "see-all-achievements" entry that
+    // pushes /achievements. The screen lists badges with an "X / Y
+    // unlocked" header.
+    const seeAll = page.getByTestId("see-all-achievements");
+    await expect(seeAll).toBeVisible();
+    await seeAll.click();
+    await expect(page.getByText(/unlocked/i).first()).toBeVisible();
+    await expect(page.getByText(/Level/).first()).toBeVisible();
+    await expect(page.getByText(/Lessons/).first()).toBeVisible();
+    await expect(page.getByText(/Streak/).first()).toBeVisible();
+    // Navigate back to the tabs (browser back works on Expo web).
+    await page.goBack();
+
     // Leaderboard tab — assert the list renders and the self row is shown.
     await page.getByRole("button", { name: /^Ranks$/ }).click();
     await expect(page.getByTestId("leaderboard-list")).toBeVisible();

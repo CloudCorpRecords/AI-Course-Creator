@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Sidebar } from "@/components/Sidebar";
+import { CompletionCelebration } from "@/components/CompletionCelebration";
 import { CourseLanding } from "@/pages/CourseLanding";
 import { LessonPage } from "@/pages/LessonPage";
 import { useProgress } from "@/hooks/useProgress";
@@ -55,6 +56,8 @@ function AppLayout() {
           <Route component={NotFound} />
         </Switch>
       </main>
+
+      <CompletionCelebration completedCount={completedCount} />
     </div>
   );
 }

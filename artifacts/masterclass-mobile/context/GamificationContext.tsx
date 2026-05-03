@@ -19,9 +19,9 @@ import {
   defaultStreakState,
   diffBadges,
   evaluateBadges,
-  isPerfect,
   isStreakAtRisk,
   levelFromXp,
+  shouldCountPerfectQuiz,
   updateStreak,
   xpForQuiz,
   XP_PER_LESSON,
@@ -40,6 +40,7 @@ interface QuizScoreRecord {
   correct: number;
   total: number;
   takenAt: string;
+  perfectFirstTry?: boolean;
 }
 
 interface PersistedState {
@@ -100,7 +101,7 @@ interface GamificationValue {
   setLastVisited: (lessonId: string) => void;
   completeLesson: (
     lessonId: string,
-    quiz?: { correct: number; total: number },
+    quiz?: { correct: number; total: number; perfectFirstTry?: boolean },
   ) => CelebrationEvent;
   setNotificationsEnabled: (on: boolean) => Promise<void>;
   resetProgress: () => Promise<void>;
@@ -185,7 +186,7 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
   const completeLesson = useCallback(
     (
       lessonId: string,
-      quiz?: { correct: number; total: number },
+      quiz?: { correct: number; total: number; perfectFirstTry?: boolean },
     ): CelebrationEvent => {
       let event: CelebrationEvent = {
         id: `${lessonId}-${Date.now()}`,
@@ -211,21 +212,31 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
               [lessonId]: { completedAt: new Date().toISOString() },
             };
 
+        const prevScore = prev.quizScores[lessonId];
+        const hadPerfectBefore = !!prevScore?.perfectFirstTry;
+
         const quizScores = quiz
           ? {
               ...prev.quizScores,
-              [lessonId]: { ...quiz, takenAt: new Date().toISOString() },
+              [lessonId]: {
+                correct: quiz.correct,
+                total: quiz.total,
+                takenAt: new Date().toISOString(),
+                perfectFirstTry:
+                  hadPerfectBefore || !!quiz.perfectFirstTry,
+              },
             }
           : prev.quizScores;
 
-        const prevScore = prev.quizScores[lessonId];
-        const wasPerfectBefore =
-          !!prevScore &&
-          prevScore.correct === prevScore.total &&
-          prevScore.total > 0;
-        const isPerfectNow = quiz ? isPerfect(quiz) : wasPerfectBefore;
-        let perfectQuizCount = prev.perfectQuizCount;
-        if (quiz && isPerfectNow && !wasPerfectBefore) perfectQuizCount += 1;
+        const isFirstTryPerfectNow = !!quiz?.perfectFirstTry;
+        const countPerfect = !!quiz &&
+          shouldCountPerfectQuiz({
+            perfectFirstTry: isFirstTryPerfectNow,
+            hadPerfectBefore,
+          });
+        const perfectQuizCount = countPerfect
+          ? prev.perfectQuizCount + 1
+          : prev.perfectQuizCount;
 
         const streak = updateStreak(prev.streak, new Date());
         const prevLevel = levelFromXp(prev.xp).level;
@@ -252,9 +263,9 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
         } else if (newBadges.length > 0) {
           title = "Badge unlocked!";
           message = `You earned ${newBadges.length} new badge${newBadges.length > 1 ? "s" : ""}`;
-        } else if (quiz && isPerfectNow) {
+        } else if (countPerfect) {
           title = "Perfect score! 💯";
-          message = `+${xpDelta} XP for nailing the quiz`;
+          message = `+${xpDelta} XP for nailing the quiz first try`;
         }
         if (streak.freezeUsedOnLastUpdate) {
           message += ` · Streak freeze saved your streak`;

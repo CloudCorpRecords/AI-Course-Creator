@@ -7,6 +7,7 @@ import {
   isStreakAtRisk,
   LEVEL_THRESHOLDS,
   levelFromXp,
+  shouldCountPerfectQuiz,
   updateStreak,
   xpForQuiz,
   XP_PER_CORRECT_QUESTION,
@@ -119,6 +120,24 @@ describe("updateStreak", () => {
     }
     expect(s.current).toBe(7);
     expect(s.freezesAvailable).toBe(1);
+  });
+});
+
+describe("shouldCountPerfectQuiz", () => {
+  it("counts a true first-try perfect", () => {
+    expect(
+      shouldCountPerfectQuiz({ perfectFirstTry: true, hadPerfectBefore: false }),
+    ).toBe(true);
+  });
+  it("does not count an eventually-correct retry", () => {
+    expect(
+      shouldCountPerfectQuiz({ perfectFirstTry: false, hadPerfectBefore: false }),
+    ).toBe(false);
+  });
+  it("does not double-count a previously-perfect quiz", () => {
+    expect(
+      shouldCountPerfectQuiz({ perfectFirstTry: true, hadPerfectBefore: true }),
+    ).toBe(false);
   });
 });
 

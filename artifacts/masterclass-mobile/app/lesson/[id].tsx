@@ -69,7 +69,11 @@ export default function LessonScreen() {
   const alreadyDone = isCompleted(lesson.id);
   const isWeb = Platform.OS === "web";
 
-  function finishLesson(result?: { correct: number; total: number }) {
+  function finishLesson(result?: {
+    correct: number;
+    total: number;
+    perfectFirstTry?: boolean;
+  }) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     completeLesson(lesson.id, result);
     setCompletedThisSession(true);
@@ -191,6 +195,7 @@ export default function LessonScreen() {
                     finishLesson({
                       correct: result.correct,
                       total: result.total,
+                      perfectFirstTry: result.perfectFirstTry,
                     });
                   }}
                 />

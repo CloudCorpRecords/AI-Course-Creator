@@ -170,6 +170,18 @@ export function isPerfect(score: QuizScore): boolean {
   return score.total > 0 && score.correct === score.total;
 }
 
+/**
+ * "Perfect quiz" badges should only count first-try aces.
+ * Eventually-correct retakes (after one or more wrong answers) do not qualify,
+ * and a previously-perfect quiz cannot increment the count again.
+ */
+export function shouldCountPerfectQuiz(args: {
+  perfectFirstTry: boolean;
+  hadPerfectBefore: boolean;
+}): boolean {
+  return args.perfectFirstTry && !args.hadPerfectBefore;
+}
+
 export interface ModuleSpec {
   id: string;
   number: number;

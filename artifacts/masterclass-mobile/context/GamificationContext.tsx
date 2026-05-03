@@ -10,31 +10,43 @@ import {
   type ReactNode,
 } from "react";
 
-import { course, getTotalLessons } from "@workspace/course-content";
 import {
-  XP_PER_LESSON,
+  course,
+  getTotalLessons,
+  type Module,
+} from "@workspace/course-content";
+import {
+  defaultStreakState,
   diffBadges,
   evaluateBadges,
   isPerfect,
+  isStreakAtRisk,
   levelFromXp,
   updateStreak,
   xpForQuiz,
+  XP_PER_LESSON,
   type LevelInfo,
   type ModuleSpec,
   type StreakState,
 } from "@workspace/gamification";
 
-const STORAGE_KEY = "masterclass-mobile.gamification.v1";
+const STORAGE_KEY = "masterclass-mobile.gamification.v2";
 
 interface CompletedLesson {
   completedAt: string;
+}
+
+interface QuizScoreRecord {
+  correct: number;
+  total: number;
+  takenAt: string;
 }
 
 interface PersistedState {
   xp: number;
   completedLessons: Record<string, CompletedLesson>;
   perfectQuizCount: number;
-  quizScores: Record<string, { correct: number; total: number; takenAt: string }>;
+  quizScores: Record<string, QuizScoreRecord>;
   streak: StreakState;
   badges: string[];
   lastVisitedLesson: string | null;
@@ -46,13 +58,13 @@ const DEFAULT_STATE: PersistedState = {
   completedLessons: {},
   perfectQuizCount: 0,
   quizScores: {},
-  streak: { current: 0, longest: 0, lastActiveDay: null },
+  streak: defaultStreakState(),
   badges: [],
   lastVisitedLesson: null,
   notificationsEnabled: false,
 };
 
-const MODULES_SPEC: ModuleSpec[] = course.modules.map((m) => ({
+const MODULES_SPEC: ModuleSpec[] = course.modules.map((m: Module) => ({
   id: m.id,
   number: m.number,
   lessonIds: m.lessons.map((l) => l.id),
@@ -67,6 +79,7 @@ export interface CelebrationEvent {
   newBadges: string[];
   leveledUp: boolean;
   newLevel?: number;
+  freezeUsed: boolean;
 }
 
 interface GamificationValue {
@@ -74,10 +87,11 @@ interface GamificationValue {
   xp: number;
   level: LevelInfo;
   streak: StreakState;
+  streakAtRisk: boolean;
   badges: string[];
   perfectQuizCount: number;
   completedLessons: Record<string, CompletedLesson>;
-  quizScores: PersistedState["quizScores"];
+  quizScores: Record<string, QuizScoreRecord>;
   lastVisitedLesson: string | null;
   notificationsEnabled: boolean;
   totalLessons: number;
@@ -102,6 +116,7 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
   const [pendingCelebration, setPendingCelebration] =
     useState<CelebrationEvent | null>(null);
   const persistTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const latestStateRef = useRef<PersistedState>(DEFAULT_STATE);
 
   useEffect(() => {
     let cancelled = false;
@@ -110,7 +125,13 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
         const raw = await AsyncStorage.getItem(STORAGE_KEY);
         if (!cancelled && raw) {
           const parsed = JSON.parse(raw) as Partial<PersistedState>;
-          setState({ ...DEFAULT_STATE, ...parsed });
+          const merged: PersistedState = {
+            ...DEFAULT_STATE,
+            ...parsed,
+            streak: { ...defaultStreakState(), ...(parsed.streak ?? {}) },
+          };
+          latestStateRef.current = merged;
+          setState(merged);
         }
       } catch {
         // ignore corrupt storage; defaults stand
@@ -125,14 +146,28 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!ready) return;
+    latestStateRef.current = state;
     if (persistTimer.current) clearTimeout(persistTimer.current);
     persistTimer.current = setTimeout(() => {
-      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(state)).catch(() => {});
+      AsyncStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(latestStateRef.current),
+      ).catch(() => {});
     }, 80);
     return () => {
       if (persistTimer.current) clearTimeout(persistTimer.current);
     };
   }, [state, ready]);
+
+  // Flush latest state on unmount to avoid losing the last debounced write.
+  useEffect(() => {
+    return () => {
+      AsyncStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(latestStateRef.current),
+      ).catch(() => {});
+    };
+  }, []);
 
   const isCompleted = useCallback(
     (lessonId: string) => !!state.completedLessons[lessonId],
@@ -159,6 +194,7 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
         xpDelta: 0,
         newBadges: [],
         leveledUp: false,
+        freezeUsed: false,
       };
       setState((prev) => {
         const alreadyDone = !!prev.completedLessons[lessonId];
@@ -181,9 +217,11 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
             }
           : prev.quizScores;
 
-        const wasPerfectBefore = !!prev.quizScores[lessonId]
-          && prev.quizScores[lessonId]!.correct === prev.quizScores[lessonId]!.total
-          && prev.quizScores[lessonId]!.total > 0;
+        const prevScore = prev.quizScores[lessonId];
+        const wasPerfectBefore =
+          !!prevScore &&
+          prevScore.correct === prevScore.total &&
+          prevScore.total > 0;
         const isPerfectNow = quiz ? isPerfect(quiz) : wasPerfectBefore;
         let perfectQuizCount = prev.perfectQuizCount;
         if (quiz && isPerfectNow && !wasPerfectBefore) perfectQuizCount += 1;
@@ -217,6 +255,9 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
           title = "Perfect score! 💯";
           message = `+${xpDelta} XP for nailing the quiz`;
         }
+        if (streak.freezeUsedOnLastUpdate) {
+          message += ` · Streak freeze saved your streak`;
+        }
 
         event = {
           id: `${lessonId}-${Date.now()}`,
@@ -226,6 +267,7 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
           newBadges,
           leveledUp,
           newLevel: leveledUp ? newLevelInfo.level : undefined,
+          freezeUsed: !!streak.freezeUsedOnLastUpdate,
         };
 
         return {
@@ -264,12 +306,17 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const resetProgress = useCallback(async () => {
+    latestStateRef.current = DEFAULT_STATE;
     setState({ ...DEFAULT_STATE });
     await AsyncStorage.removeItem(STORAGE_KEY).catch(() => {});
   }, []);
 
   const level = useMemo(() => levelFromXp(state.xp), [state.xp]);
   const completedCount = Object.keys(state.completedLessons).length;
+  const streakAtRisk = useMemo(
+    () => isStreakAtRisk(state.streak, new Date()),
+    [state.streak],
+  );
 
   const value = useMemo<GamificationValue>(
     () => ({
@@ -277,6 +324,7 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
       xp: state.xp,
       level,
       streak: state.streak,
+      streakAtRisk,
       badges: state.badges,
       perfectQuizCount: state.perfectQuizCount,
       completedLessons: state.completedLessons,
@@ -297,6 +345,7 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
       ready,
       state,
       level,
+      streakAtRisk,
       completedCount,
       isCompleted,
       setLastVisited,

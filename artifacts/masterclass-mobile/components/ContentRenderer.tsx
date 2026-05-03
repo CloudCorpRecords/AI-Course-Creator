@@ -130,10 +130,14 @@ function CodeBlockView({
   );
 }
 
-const CALLOUT_CONFIG = {
-  tip: { icon: "zap" as const, color: "#10b981" },
-  warning: { icon: "alert-triangle" as const, color: "#f59e0b" },
-  insight: { icon: "star" as const, color: "#7c6af7" },
+type CalloutKind = "tip" | "warning" | "insight";
+const CALLOUT_CONFIG: Record<
+  CalloutKind,
+  { icon: "zap" | "alert-triangle" | "star"; color: string }
+> = {
+  tip: { icon: "zap", color: "#10b981" },
+  warning: { icon: "alert-triangle", color: "#f59e0b" },
+  insight: { icon: "star", color: "#7c6af7" },
 };
 
 function CalloutView({
@@ -142,7 +146,7 @@ function CalloutView({
   block: Extract<ContentBlock, { type: "tip" | "warning" | "insight" }>;
 }) {
   const colors = useColors();
-  const cfg = CALLOUT_CONFIG[block.type];
+  const cfg = CALLOUT_CONFIG[block.type as CalloutKind];
   return (
     <View
       style={{
@@ -260,7 +264,7 @@ function ExerciseView({
       )}
       {open && (
         <View style={{ gap: 6 }}>
-          {block.hints.map((h, i) => (
+          {block.hints.map((h: string, i: number) => (
             <View key={i} style={{ flexDirection: "row", gap: 8 }}>
               <Text style={{ color: colors.primary }}>→</Text>
               <Text

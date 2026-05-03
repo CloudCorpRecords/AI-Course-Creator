@@ -6,6 +6,9 @@ export const LEVEL_THRESHOLDS = [
   0, 100, 250, 500, 1000, 2000, 4000, 7500, 12000, 20000,
 ] as const;
 
+export const STREAK_FREEZE_REGEN_INTERVAL = 7;
+export const STREAK_FREEZE_MAX = 1;
+
 export interface BadgeDef {
   id: string;
   title: string;
@@ -21,8 +24,8 @@ export const BADGES: BadgeDef[] = [
   { id: "module-4", title: "Workflow Wizard", description: "Complete Module 4", emoji: "⚙️" },
   { id: "module-5", title: "Advanced Adept", description: "Complete Module 5", emoji: "🚀" },
   { id: "module-6", title: "Builder Boss", description: "Complete Module 6", emoji: "🏗️" },
-  { id: "quiz-ace", title: "Quiz Ace", description: "Score 100% on a quiz", emoji: "💯" },
-  { id: "perfect-five", title: "Perfectionist", description: "Score 100% on 5 quizzes", emoji: "🌟" },
+  { id: "quiz-ace", title: "Quiz Ace", description: "Pass a quiz with no mistakes", emoji: "💯" },
+  { id: "perfect-five", title: "Perfectionist", description: "Ace 5 quizzes on first try", emoji: "🌟" },
   { id: "streak-3", title: "On a Roll", description: "3-day learning streak", emoji: "🔥" },
   { id: "streak-7", title: "Week Warrior", description: "7-day learning streak", emoji: "🗓️" },
   { id: "streak-30", title: "Unstoppable", description: "30-day learning streak", emoji: "👑" },
@@ -76,14 +79,32 @@ export interface StreakState {
   current: number;
   longest: number;
   lastActiveDay: string | null;
+  /** Available "freezes" that protect the streak across a one-day gap. */
+  freezesAvailable: number;
+  /** Whether the most recent updateStreak() consumed a freeze. */
+  freezeUsedOnLastUpdate?: boolean;
+}
+
+export function defaultStreakState(): StreakState {
+  return {
+    current: 0,
+    longest: 0,
+    lastActiveDay: null,
+    freezesAvailable: STREAK_FREEZE_MAX,
+    freezeUsedOnLastUpdate: false,
+  };
 }
 
 export function updateStreak(prev: StreakState, today: Date | string): StreakState {
   const todayKey = dayKey(today);
   if (prev.lastActiveDay === todayKey) {
-    return prev;
+    return { ...prev, freezeUsedOnLastUpdate: false };
   }
+
   let current: number;
+  let freezesAvailable = prev.freezesAvailable ?? 0;
+  let freezeUsed = false;
+
   if (prev.lastActiveDay === null) {
     current = 1;
   } else {
@@ -92,15 +113,45 @@ export function updateStreak(prev: StreakState, today: Date | string): StreakSta
       current = prev.current + 1;
     } else if (diff <= 0) {
       current = prev.current;
+    } else if (diff === 2 && freezesAvailable > 0) {
+      current = prev.current + 1;
+      freezesAvailable -= 1;
+      freezeUsed = true;
     } else {
       current = 1;
     }
   }
+
+  // Refill one freeze every full week of streak (only when a fresh day was added).
+  if (
+    !freezeUsed &&
+    current > prev.current &&
+    current % STREAK_FREEZE_REGEN_INTERVAL === 0 &&
+    freezesAvailable < STREAK_FREEZE_MAX
+  ) {
+    freezesAvailable = Math.min(STREAK_FREEZE_MAX, freezesAvailable + 1);
+  }
+
   return {
     current,
     longest: Math.max(prev.longest, current),
     lastActiveDay: todayKey,
+    freezesAvailable,
+    freezeUsedOnLastUpdate: freezeUsed,
   };
+}
+
+/**
+ * Returns true when the streak is alive but the user has not been active today.
+ * Useful for surfacing an "at risk" warning in the UI.
+ */
+export function isStreakAtRisk(
+  streak: StreakState,
+  today: Date | string,
+): boolean {
+  if (streak.current <= 0) return false;
+  if (!streak.lastActiveDay) return false;
+  return dayKey(today) !== streak.lastActiveDay;
 }
 
 export interface QuizScore {

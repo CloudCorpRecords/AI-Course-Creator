@@ -1,17 +1,18 @@
 import { describe, it, expect } from "vitest";
 import {
+  defaultStreakState,
+  diffBadges,
+  evaluateBadges,
+  isPerfect,
+  isStreakAtRisk,
+  LEVEL_THRESHOLDS,
   levelFromXp,
   updateStreak,
   xpForQuiz,
-  isPerfect,
-  evaluateBadges,
-  diffBadges,
-  dayKey,
-  LEVEL_THRESHOLDS,
   XP_PER_CORRECT_QUESTION,
   XP_PERFECT_QUIZ_BONUS,
-  type StreakState,
   type ModuleSpec,
+  type StreakState,
 } from "../src/index";
 
 describe("levelFromXp", () => {
@@ -55,19 +56,22 @@ describe("xpForQuiz / isPerfect", () => {
 });
 
 describe("updateStreak", () => {
-  const base: StreakState = { current: 0, longest: 0, lastActiveDay: null };
+  const base = defaultStreakState();
 
   it("starts at 1 from empty", () => {
     const s = updateStreak(base, new Date("2025-01-01T10:00:00"));
     expect(s.current).toBe(1);
     expect(s.longest).toBe(1);
     expect(s.lastActiveDay).toBe("2025-01-01");
+    expect(s.freezeUsedOnLastUpdate).toBe(false);
   });
 
   it("is idempotent for same day", () => {
     const s1 = updateStreak(base, new Date("2025-01-01T10:00:00"));
     const s2 = updateStreak(s1, new Date("2025-01-01T22:00:00"));
-    expect(s2).toEqual(s1);
+    expect(s2.current).toBe(s1.current);
+    expect(s2.longest).toBe(s1.longest);
+    expect(s2.lastActiveDay).toBe(s1.lastActiveDay);
   });
 
   it("increments on consecutive day", () => {
@@ -77,7 +81,7 @@ describe("updateStreak", () => {
     expect(s2.longest).toBe(2);
   });
 
-  it("resets after gap, preserves longest", () => {
+  it("resets after gap larger than freeze can cover", () => {
     let s = updateStreak(base, new Date("2025-01-01T10:00:00"));
     s = updateStreak(s, new Date("2025-01-02T10:00:00"));
     s = updateStreak(s, new Date("2025-01-03T10:00:00"));
@@ -86,12 +90,61 @@ describe("updateStreak", () => {
     expect(s.current).toBe(1);
     expect(s.longest).toBe(3);
   });
+
+  it("consumes a freeze on a single missed day", () => {
+    let s = updateStreak(base, new Date("2025-01-01T10:00:00"));
+    s = updateStreak(s, new Date("2025-01-02T10:00:00"));
+    expect(s.freezesAvailable).toBe(1);
+    s = updateStreak(s, new Date("2025-01-04T10:00:00"));
+    expect(s.current).toBe(3);
+    expect(s.freezeUsedOnLastUpdate).toBe(true);
+    expect(s.freezesAvailable).toBe(0);
+  });
+
+  it("breaks the streak when no freezes remain", () => {
+    let s = updateStreak(base, new Date("2025-01-01T10:00:00"));
+    s = updateStreak(s, new Date("2025-01-03T10:00:00"));
+    expect(s.freezesAvailable).toBe(0);
+    s = updateStreak(s, new Date("2025-01-05T10:00:00"));
+    expect(s.current).toBe(1);
+  });
+
+  it("refills a freeze on every 7-day streak milestone", () => {
+    let s = updateStreak(base, new Date("2025-01-01T10:00:00"));
+    s = updateStreak(s, new Date("2025-01-03T10:00:00"));
+    expect(s.freezesAvailable).toBe(0);
+    for (let i = 4; i <= 8; i++) {
+      const day = String(i).padStart(2, "0");
+      s = updateStreak(s, new Date(`2025-01-${day}T10:00:00`));
+    }
+    expect(s.current).toBe(7);
+    expect(s.freezesAvailable).toBe(1);
+  });
 });
 
-describe("dayKey", () => {
-  it("formats local YYYY-MM-DD", () => {
-    expect(dayKey(new Date(2025, 0, 5, 23, 30))).toBe("2025-01-05");
-    expect(dayKey(new Date(2025, 11, 31, 0, 1))).toBe("2025-12-31");
+describe("isStreakAtRisk", () => {
+  it("is false with no streak", () => {
+    expect(
+      isStreakAtRisk(defaultStreakState(), new Date("2025-01-01")),
+    ).toBe(false);
+  });
+  it("is true when last active was earlier than today", () => {
+    const s: StreakState = {
+      current: 3,
+      longest: 3,
+      lastActiveDay: "2025-01-01",
+      freezesAvailable: 1,
+    };
+    expect(isStreakAtRisk(s, new Date("2025-01-02T08:00:00"))).toBe(true);
+  });
+  it("is false when last active is today", () => {
+    const s: StreakState = {
+      current: 3,
+      longest: 3,
+      lastActiveDay: "2025-01-02",
+      freezesAvailable: 1,
+    };
+    expect(isStreakAtRisk(s, new Date("2025-01-02T22:00:00"))).toBe(false);
   });
 });
 
@@ -100,7 +153,7 @@ describe("evaluateBadges", () => {
     { id: "module-1", number: 1, lessonIds: ["1-1", "1-2"] },
     { id: "module-2", number: 2, lessonIds: ["2-1", "2-2"] },
   ];
-  const baseStreak: StreakState = { current: 0, longest: 0, lastActiveDay: null };
+  const baseStreak = defaultStreakState();
 
   it("awards first-lesson on first completion", () => {
     const earned = evaluateBadges({
@@ -148,7 +201,12 @@ describe("evaluateBadges", () => {
       totalLessons: 4,
       modules,
       perfectQuizCount: 5,
-      streak: { current: 7, longest: 7, lastActiveDay: "2025-01-07" },
+      streak: {
+        current: 7,
+        longest: 7,
+        lastActiveDay: "2025-01-07",
+        freezesAvailable: 1,
+      },
       level: 5,
     });
     expect(earned).toEqual(

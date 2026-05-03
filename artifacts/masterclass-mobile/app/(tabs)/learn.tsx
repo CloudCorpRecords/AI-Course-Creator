@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { course } from "@workspace/course-content";
+import { course, type Module } from "@workspace/course-content";
 
 import { useColors } from "@/hooks/useColors";
 import { useGamification } from "@/context/GamificationContext";
@@ -66,7 +66,7 @@ export default function LearnScreen() {
         Learn
       </Text>
 
-      {course.modules.map((module) => (
+      {course.modules.map((module: Module) => (
         <View
           key={module.id}
           ref={(el) => {
@@ -116,7 +116,7 @@ export default function LearnScreen() {
               overflow: "hidden",
             }}
           >
-            {module.lessons.map((lesson, i) => {
+            {module.lessons.map((lesson: Module["lessons"][number], i: number) => {
               const done = isCompleted(lesson.id);
               const score = quizScores[lesson.id];
               return (

@@ -14,8 +14,6 @@
     "expo-env.d.ts"
   ],
   "references": [
-    { "path": "../../lib/api-client-react" },
-    { "path": "../../lib/course-content" },
-    { "path": "../../lib/gamification" }
+    { "path": "../../lib/api-client-react" }
   ]
 }

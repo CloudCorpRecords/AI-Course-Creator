@@ -154,7 +154,7 @@ export function CelebrationOverlay() {
 
   const { title, message, newBadges, leveledUp, newLevel } = pendingCelebration;
   const badgeDefs = newBadges
-    .map((id) => BADGES.find((b) => b.id === id))
+    .map((id: string) => BADGES.find((b) => b.id === id))
     .filter((b): b is (typeof BADGES)[number] => !!b);
 
   return (

@@ -30,16 +30,13 @@ export default function LessonScreen() {
   );
   const quiz = useMemo(() => (id ? getQuizForLesson(id) : null), [id]);
 
-  const [quizResult, setQuizResult] = useState<{
-    correct: number;
-    total: number;
-  } | null>(null);
   const [completedThisSession, setCompletedThisSession] = useState(false);
+  const [quizPassed, setQuizPassed] = useState(false);
 
   useEffect(() => {
     if (id) setLastVisited(id);
-    setQuizResult(null);
     setCompletedThisSession(false);
+    setQuizPassed(false);
   }, [id, setLastVisited]);
 
   if (!found) {
@@ -154,14 +151,50 @@ export default function LessonScreen() {
 
         <View style={{ marginTop: 6, gap: 12 }}>
           {quiz ? (
-            !quizResult ? (
-              <Quiz
-                quiz={quiz}
-                onFinish={(result) => {
-                  setQuizResult(result);
-                  finishLesson(result);
-                }}
-              />
+            !quizPassed ? (
+              <>
+                <View
+                  style={{
+                    backgroundColor: colors.muted,
+                    borderRadius: 10,
+                    borderLeftWidth: 3,
+                    borderLeftColor: colors.primary,
+                    padding: 12,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: colors.foreground,
+                      fontFamily: "Inter_600SemiBold",
+                      fontSize: 13.5,
+                    }}
+                  >
+                    Pass the quiz to mark this lesson complete.
+                  </Text>
+                  <Text
+                    style={{
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_400Regular",
+                      fontSize: 12.5,
+                      lineHeight: 18,
+                      marginTop: 2,
+                    }}
+                  >
+                    Answer every question correctly. You can retry any
+                    questions you miss.
+                  </Text>
+                </View>
+                <Quiz
+                  quiz={quiz}
+                  onPass={(result) => {
+                    setQuizPassed(true);
+                    finishLesson({
+                      correct: result.correct,
+                      total: result.total,
+                    });
+                  }}
+                />
+              </>
             ) : (
               <View
                 style={{
@@ -170,27 +203,36 @@ export default function LessonScreen() {
                   borderWidth: 1,
                   borderColor: colors.border,
                   padding: 16,
-                  gap: 6,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 12,
                 }}
               >
-                <Text
-                  style={{
-                    color: colors.foreground,
-                    fontFamily: "Inter_700Bold",
-                    fontSize: 16,
-                  }}
-                >
-                  Quiz score: {quizResult.correct}/{quizResult.total}
-                </Text>
-                <Text
-                  style={{
-                    color: colors.mutedForeground,
-                    fontFamily: "Inter_400Regular",
-                    fontSize: 13,
-                  }}
-                >
-                  Lesson saved to your progress.
-                </Text>
+                <Feather
+                  name="check-circle"
+                  size={22}
+                  color={colors.success}
+                />
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text
+                    style={{
+                      color: colors.foreground,
+                      fontFamily: "Inter_700Bold",
+                      fontSize: 15,
+                    }}
+                  >
+                    Quiz passed — lesson saved.
+                  </Text>
+                  <Text
+                    style={{
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_400Regular",
+                      fontSize: 12.5,
+                    }}
+                  >
+                    XP and badges updated.
+                  </Text>
+                </View>
               </View>
             )
           ) : (

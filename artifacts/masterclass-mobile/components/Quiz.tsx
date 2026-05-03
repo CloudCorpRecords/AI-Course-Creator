@@ -8,20 +8,38 @@ import type { Quiz as QuizData } from "@workspace/course-content";
 
 interface Props {
   quiz: QuizData;
-  onFinish: (result: { correct: number; total: number }) => void;
+  /** Called only when the learner has answered every question correctly. */
+  onPass: (result: {
+    correct: number;
+    total: number;
+    attempts: number;
+    perfectFirstTry: boolean;
+  }) => void;
 }
 
-export function Quiz({ quiz, onFinish }: Props) {
+export function Quiz({ quiz, onPass }: Props) {
   const colors = useColors();
-  const [index, setIndex] = useState(0);
+  const total = quiz.questions.length;
+
+  const [queue, setQueue] = useState<number[]>(() =>
+    quiz.questions.map((_, i) => i),
+  );
+  const [pos, setPos] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [revealed, setRevealed] = useState(false);
-  const [correctCount, setCorrectCount] = useState(0);
-  const [done, setDone] = useState(false);
+  const [correctIds, setCorrectIds] = useState<Set<number>>(() => new Set());
+  const [missedThisAttempt, setMissedThisAttempt] = useState<number[]>([]);
+  const [attempts, setAttempts] = useState(1);
+  const [phase, setPhase] = useState<"answering" | "review" | "passed">(
+    "answering",
+  );
 
-  const total = quiz.questions.length;
-  const q = quiz.questions[index]!;
-  const progress = useMemo(() => (index + 1) / total, [index, total]);
+  const progress = useMemo(
+    () => (queue.length === 0 ? 0 : (pos + 1) / queue.length),
+    [pos, queue.length],
+  );
+  const questionIndex = queue[pos]!;
+  const q = quiz.questions[questionIndex]!;
 
   function pick(optionIndex: number) {
     if (revealed) return;
@@ -33,33 +51,125 @@ export function Quiz({ quiz, onFinish }: Props) {
     setRevealed(true);
     const isCorrect = selected === q.correctIndex;
     if (isCorrect) {
-      setCorrectCount((c) => c + 1);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
-        () => {},
-      );
+      setCorrectIds((prev) => {
+        const next = new Set(prev);
+        next.add(questionIndex);
+        return next;
+      });
+      Haptics.notificationAsync(
+        Haptics.NotificationFeedbackType.Success,
+      ).catch(() => {});
     } else {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(
-        () => {},
+      setMissedThisAttempt((prev) =>
+        prev.includes(questionIndex) ? prev : [...prev, questionIndex],
       );
+      Haptics.notificationAsync(
+        Haptics.NotificationFeedbackType.Warning,
+      ).catch(() => {});
     }
   }
 
   function next() {
-    if (index + 1 >= total) {
-      setDone(true);
-      onFinish({
-        correct: correctCount,
-        total,
-      });
+    if (pos + 1 < queue.length) {
+      setPos((p) => p + 1);
+      setSelected(null);
+      setRevealed(false);
       return;
     }
-    setIndex((i) => i + 1);
-    setSelected(null);
-    setRevealed(false);
+    // End of pass: did they ace this attempt's queue?
+    if (missedThisAttempt.length === 0) {
+      setPhase("passed");
+      onPass({
+        correct: total,
+        total,
+        attempts,
+        perfectFirstTry: attempts === 1,
+      });
+    } else {
+      setPhase("review");
+    }
   }
 
-  if (done) {
-    const isPerfect = correctCount === total;
+  function retryMissed() {
+    Haptics.selectionAsync().catch(() => {});
+    setQueue(missedThisAttempt);
+    setMissedThisAttempt([]);
+    setPos(0);
+    setSelected(null);
+    setRevealed(false);
+    setAttempts((a) => a + 1);
+    setPhase("answering");
+  }
+
+  if (phase === "review") {
+    return (
+      <View
+        style={{
+          backgroundColor: colors.card,
+          borderRadius: colors.radius,
+          borderWidth: 1,
+          borderColor: colors.border,
+          padding: 18,
+          gap: 12,
+          alignItems: "center",
+        }}
+      >
+        <Feather name="rotate-ccw" size={28} color={colors.warning} />
+        <Text
+          style={{
+            color: colors.foreground,
+            fontFamily: "Inter_700Bold",
+            fontSize: 18,
+            textAlign: "center",
+          }}
+        >
+          Almost there
+        </Text>
+        <Text
+          style={{
+            color: colors.mutedForeground,
+            fontFamily: "Inter_500Medium",
+            fontSize: 13.5,
+            textAlign: "center",
+            lineHeight: 20,
+          }}
+        >
+          You missed {missedThisAttempt.length} question
+          {missedThisAttempt.length === 1 ? "" : "s"} this round. Retry the
+          missed ones to complete the lesson.
+        </Text>
+        <Pressable
+          testID="quiz-retry"
+          onPress={retryMissed}
+          style={({ pressed }) => ({
+            marginTop: 4,
+            backgroundColor: colors.primary,
+            paddingHorizontal: 24,
+            paddingVertical: 12,
+            borderRadius: 10,
+            opacity: pressed ? 0.9 : 1,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 8,
+          })}
+        >
+          <Feather name="refresh-cw" size={14} color={colors.primaryForeground} />
+          <Text
+            style={{
+              color: colors.primaryForeground,
+              fontFamily: "Inter_600SemiBold",
+              fontSize: 14,
+            }}
+          >
+            Retry missed questions
+          </Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  if (phase === "passed") {
+    const perfect = attempts === 1;
     return (
       <View
         style={{
@@ -73,9 +183,9 @@ export function Quiz({ quiz, onFinish }: Props) {
         }}
       >
         <Feather
-          name={isPerfect ? "award" : "check-circle"}
+          name={perfect ? "award" : "check-circle"}
           size={36}
-          color={isPerfect ? colors.warning : colors.success}
+          color={perfect ? colors.warning : colors.success}
         />
         <Text
           style={{
@@ -84,16 +194,19 @@ export function Quiz({ quiz, onFinish }: Props) {
             fontSize: 20,
           }}
         >
-          {isPerfect ? "Perfect score!" : "Quiz complete"}
+          {perfect ? "Aced it on the first try!" : "Quiz passed"}
         </Text>
         <Text
           style={{
             color: colors.mutedForeground,
             fontFamily: "Inter_500Medium",
             fontSize: 14,
+            textAlign: "center",
           }}
         >
-          {correctCount} / {total} correct
+          {perfect
+            ? `Perfect ${total}/${total} — lesson saved.`
+            : `Cleared in ${attempts} attempt${attempts > 1 ? "s" : ""}.`}
         </Text>
       </View>
     );
@@ -127,7 +240,8 @@ export function Quiz({ quiz, onFinish }: Props) {
               textTransform: "uppercase",
             }}
           >
-            Quiz · {index + 1} of {total}
+            Quiz · {pos + 1} of {queue.length}
+            {attempts > 1 ? " · Retry" : ""}
           </Text>
           <Text
             style={{
@@ -136,7 +250,7 @@ export function Quiz({ quiz, onFinish }: Props) {
               fontSize: 12,
             }}
           >
-            {correctCount} correct
+            {correctIds.size}/{total} correct
           </Text>
         </View>
         <View
@@ -169,7 +283,7 @@ export function Quiz({ quiz, onFinish }: Props) {
       </Text>
 
       <View style={{ gap: 8 }}>
-        {q.options.map((opt, i) => {
+        {q.options.map((opt: string, i: number) => {
           const isSelected = selected === i;
           const isCorrectAnswer = i === q.correctIndex;
           const showCorrect = revealed && isCorrectAnswer;
@@ -312,7 +426,7 @@ export function Quiz({ quiz, onFinish }: Props) {
               fontSize: 15,
             }}
           >
-            {index + 1 >= total ? "Finish quiz" : "Next question"}
+            {pos + 1 >= queue.length ? "Continue" : "Next question"}
           </Text>
           <Feather
             name="arrow-right"

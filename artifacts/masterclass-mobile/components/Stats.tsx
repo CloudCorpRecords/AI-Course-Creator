@@ -1,10 +1,56 @@
 import { Feather } from "@expo/vector-icons";
 import { Text, View } from "react-native";
 
-import { BADGES } from "@workspace/gamification";
+import { BADGES, type BadgeDef } from "@workspace/gamification";
 
 import { useColors } from "@/hooks/useColors";
 import { useGamification } from "@/context/GamificationContext";
+
+export function StreakWarningBanner() {
+  const colors = useColors();
+  const { streakAtRisk, streak } = useGamification();
+  if (!streakAtRisk) return null;
+  const freezesLeft = streak.freezesAvailable ?? 0;
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 10,
+        backgroundColor: colors.warning + "1f",
+        borderColor: colors.warning + "55",
+        borderWidth: 1,
+        borderRadius: 12,
+        padding: 12,
+      }}
+    >
+      <Feather name="alert-triangle" size={18} color={colors.warning} />
+      <View style={{ flex: 1, gap: 2 }}>
+        <Text
+          style={{
+            color: colors.foreground,
+            fontFamily: "Inter_700Bold",
+            fontSize: 13.5,
+          }}
+        >
+          Your {streak.current}-day streak is at risk
+        </Text>
+        <Text
+          style={{
+            color: colors.mutedForeground,
+            fontFamily: "Inter_500Medium",
+            fontSize: 12,
+            lineHeight: 17,
+          }}
+        >
+          {freezesLeft > 0
+            ? `Finish a lesson today, or a streak freeze will protect it once.`
+            : `Finish a lesson today to keep it alive — no freezes left.`}
+        </Text>
+      </View>
+    </View>
+  );
+}
 
 export function XPProgressCard() {
   const colors = useColors();
@@ -186,7 +232,7 @@ export function BadgeGrid() {
         gap: 10,
       }}
     >
-      {BADGES.map((b) => {
+      {BADGES.map((b: BadgeDef) => {
         const isEarned = earned.has(b.id);
         return (
           <View

@@ -1,3 +1,15 @@
+# AI Coding Masterclass
+
+**A complete course on building software with AI assistants, built and taught by Rene Turcios.**
+
+This is the course I teach in live workshops, shipped as a real product: a web masterclass, a mobile companion app with full gamification (XP, levels, streaks, badges, quizzes, leaderboard), and the API behind them. Multi-module curriculum covering prompting, AI-assisted building workflows, and shipping real projects with tools like Replit, Cursor, and Claude.
+
+If you are evaluating me for a Developer Relations, Applied AI, or Forward Deployed role, this repo is the teaching proof: curriculum design, lesson content, and the full-stack platform that delivers it.
+
+**Stack:** TypeScript, React, Vite, Expo / React Native, Express 5, pnpm monorepo.
+
+---
+
 # AI Coding Masterclass — Workspace
 
 A pnpm + TypeScript monorepo containing the **AI Coding Masterclass** — a
